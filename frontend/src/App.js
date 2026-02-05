@@ -2,7 +2,6 @@ import React, { useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import MyTasks from './components/MyTasks'
 import TaskDetails from './components/TaskDetails'
-import Footer from './components/Footer'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import Reports from './components/Reports'
@@ -34,10 +33,8 @@ export default function App() {
                 <Route path="/tasks" element={<MyTasks />} />
                 <Route path="/tasks/:id" element={<TaskDetails />} />
 
-                {/* <Route path="/all-tasks" element={<AllTasks />} /> */}
                 {/* <Route path="/reports" element={<Reports />} /> */}
                 {/* <Route path="/profile" element={<Profile />} /> */}
-                {/* <Route path="*" element={<Navigate to="/" />} /> */}
               </Routes>
             </div>
           </div>
