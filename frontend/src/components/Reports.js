@@ -56,7 +56,7 @@ export default function Reports() {
         {summaryData.map((item, index) => (
           <div
             key={index}
-            className={`bg-gradient-to-r ${item.bg} text-white rounded-xl shadow-lg p-5 flex items-center justify-between hover:scale-105 transform transition`}
+            className={`bg-linear-to-r ${item.bg} text-white rounded-xl shadow-lg p-5 flex items-center justify-between hover:scale-105 transform transition`}
           >
             <div>
               <p className="text-sm opacity-80">{item.label}</p>

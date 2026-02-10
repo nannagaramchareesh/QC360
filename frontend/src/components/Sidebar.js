@@ -17,7 +17,7 @@ const Sidebar = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-gray-800">TaskFlow</h1>
         <p className="mt-1 text-xs font-medium text-gray-400">Your Workflow Hub</p>
-        <div className="h-1 mt-4 rounded-full shadow-sm w-14 bg-gradient-to-r from-blue-400 to-blue-200"></div>
+        <div className="h-1 mt-4 rounded-full shadow-sm w-14 bg-linear-to-r from-blue-400 to-blue-200"></div>
       </div>
 
       {/* Navigation Links */}
@@ -32,12 +32,12 @@ const Sidebar = () => {
                 flex items-center gap-3 px-4 py-2 rounded-2xl text-gray-700 font-medium text-sm
                 transition-all duration-300 cursor-pointer
                 ${isActive
-                  ? "bg-gradient-to-r from-blue-100 to-blue-50 shadow-lg scale-105"
+                  ? "bg-linear-to-r from-blue-100 to-blue-50 shadow-lg scale-105"
                   : "bg-white shadow hover:shadow-lg hover:scale-105"
                 }
               `}
             >
-              <div className="flex items-center justify-center w-8 h-8 text-sm font-semibold text-blue-700 rounded-full shadow-inner bg-gradient-to-tr from-blue-50 to-blue-100">
+              <div className="flex items-center justify-center w-8 h-8 text-sm font-semibold text-blue-700 rounded-full shadow-inner bg-linear-to-tr from-blue-50 to-blue-100">
                 {link.name.charAt(0)}
               </div>
               <span>{link.name}</span>
