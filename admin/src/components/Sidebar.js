@@ -42,11 +42,7 @@ export default function Sidebar() {
           label="Inventory"
         />
 
-        <SidebarItem
-          to="/upload-excel"
-          icon={<FaFileUpload />}
-          label="Upload Excel"
-        />
+      
 
         <SidebarItem
           to="/users"
@@ -54,11 +50,7 @@ export default function Sidebar() {
           label="Users"
         />
 
-        <SidebarItem
-          to="/assign-tasks"
-          icon={<FaExchangeAlt />}
-          label="Assign Tasks"
-        />
+      
 
         <SidebarItem
           to="/reports"

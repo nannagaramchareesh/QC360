@@ -7,11 +7,9 @@ import Navbar from "./components/Navbar";
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import Inventory from "./components/Inventory";
-import UploadExcel from "./components/UploadExcel";
 import Users from "./components/Users";
-import AssignTasks from "./components/AssignTasks";
 import Reports from "./components/Reports";
-
+import TaskDetails from "./components/TaskDetails";
 /* Context */
 import AdminContext from './context/AdminContext'
 
@@ -37,11 +35,10 @@ export default function App() {
               <div className="container-fluid mt-4">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
-                  {/* <Route path="/inventory" element={<Inventory />} />
-                  <Route path="/upload-excel" element={<UploadExcel />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/inventory/:id" element={<TaskDetails />} />
                   <Route path="/users" element={<Users />} />
-                  <Route path="/assign-tasks" element={<AssignTasks />} />
-                  <Route path="/reports" element={<Reports />} /> */}
+                  <Route path="/reports" element={<Reports />} />
                 </Routes>
               </div>
             </div>
