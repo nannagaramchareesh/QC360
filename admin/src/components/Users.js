@@ -1,45 +1,73 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { backendUrl } from "../App";
 
 export default function UserManagement() {
   const [showModal, setShowModal] = useState(false);
 
-  const users = [
-    {
-      name: "Rahul Verma",
-      email: "rahul@krijay.com",
-      role: "Production",
-      tasks: 6,
-      status: "Active",
-      created: "2026-01-12",
-    },
-    {
-      name: "Anjali Singh",
-      email: "anjali@krijay.com",
-      role: "QC",
-      tasks: 3,
-      status: "Active",
-      created: "2026-01-20",
-    },
-    {
-      name: "Suresh Kumar",
-      email: "suresh@krijay.com",
-      role: "Production",
-      tasks: 0,
-      status: "Inactive",
-      created: "2025-12-05",
-    },
-  ];
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    roles: [],
+  });
+  const [users, setUsers] = useState([]);
+  useEffect(async ()=>{
+    const response = await axios.get(`${backendUrl}/api/users`);
+    setUsers(response.data);
+  }, []);
+  // Sample users
+
+  // Handle input change
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    if (name === "roles") {
+      let updatedRoles = [...formData.roles];
+      if (checked) {
+        updatedRoles.push(value);
+      } else {
+        updatedRoles = updatedRoles.filter((r) => r !== value);
+      }
+      setFormData({ ...formData, roles: updatedRoles });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  // Handle form submission
+  const handleCreateUser = async () => {
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.password ||
+      formData.roles.length === 0
+    ) {
+      alert("Please fill all fields and select at least one role.");
+      return;
+    }
+
+    const {data} = await axios.post(`${backendUrl}/api/auth/register`, formData)
+    if(data.success){
+      alert("User created successfully!");
+    }
+    else {
+      alert("Error creating user: " + data.message);
+    }
+    // Reset form and close modal
+    setFormData({ name: "", email: "", password: "", roles: [] });
+    setShowModal(false);
+  };
 
   return (
-    <div className="container-fluid">
+    <div className="container-fluid p-4">
 
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h3 className="fw-bold">User Management</h3>
-          <p className="text-muted mb-0">
-            Manage production & QC team members
-          </p>
+          <p className="text-muted mb-0">Manage production & qc team members</p>
         </div>
         <button
           className="btn btn-primary"
@@ -52,8 +80,8 @@ export default function UserManagement() {
       {/* Stats */}
       <div className="row mb-4">
         <StatCard title="Total Users" value="12" color="primary" />
-        <StatCard title="Production" value="7" color="success" />
-        <StatCard title="QC" value="4" color="warning" />
+        <StatCard title="production" value="7" color="success" />
+        <StatCard title="qc" value="4" color="warning" />
         <StatCard title="Inactive" value="1" color="secondary" />
       </div>
 
@@ -70,8 +98,8 @@ export default function UserManagement() {
           <div className="col-md-3">
             <select className="form-select">
               <option>All Roles</option>
-              <option>Production</option>
-              <option>QC</option>
+              <option>production</option>
+              <option>qc</option>
             </select>
           </div>
           <div className="col-md-3">
@@ -82,9 +110,7 @@ export default function UserManagement() {
             </select>
           </div>
           <div className="col-md-2">
-            <button className="btn btn-outline-secondary w-100">
-              Reset
-            </button>
+            <button className="btn btn-outline-secondary w-100">Reset</button>
           </div>
         </div>
       </div>
@@ -97,7 +123,7 @@ export default function UserManagement() {
               <tr>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Role</th>
+                <th>Roles</th>
                 <th>Assigned Tasks</th>
                 <th>Status</th>
                 <th>Created On</th>
@@ -110,18 +136,20 @@ export default function UserManagement() {
                   <td className="fw-medium">{user.name}</td>
                   <td>{user.email}</td>
                   <td>
-                    <span className="badge bg-info text-dark">
-                      {user.role}
-                    </span>
+                    {user.roles.map((role) => (
+                      <span
+                        key={role}
+                        className="badge bg-info text-dark me-1"
+                      >
+                        {role}
+                      </span>
+                    ))}
                   </td>
                   <td>{user.tasks}</td>
                   <td>
                     <span
-                      className={`badge ${
-                        user.status === "Active"
-                          ? "bg-success"
-                          : "bg-secondary"
-                      }`}
+                      className={`badge ${user.status === "Active" ? "bg-success" : "bg-secondary"
+                        }`}
                     >
                       {user.status}
                     </span>
@@ -142,9 +170,7 @@ export default function UserManagement() {
                         <li>
                           <hr className="dropdown-divider" />
                         </li>
-                        <li className="dropdown-item text-danger">
-                          Deactivate
-                        </li>
+                        <li className="dropdown-item text-danger">Deactivate</li>
                       </ul>
                     </div>
                   </td>
@@ -157,61 +183,119 @@ export default function UserManagement() {
 
       {/* Create User Modal */}
       {showModal && (
-        <div className="modal fade show d-block" tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Create User</h5>
-                <button
-                  className="btn-close"
-                  onClick={() => setShowModal(false)}
-                ></button>
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.3)", zIndex: 1050 }}
+        >
+          <div className="bg-light rounded-4 shadow-lg p-5 w-100" style={{ maxWidth: "600px", border: "2px solid #f0f0f0" }}>
+
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div className="d-flex align-items-center gap-2">
+                <span className="fs-3 text-primary">
+                  <i className="bi bi-person-plus-fill"></i> {/* Bootstrap icon */}
+                </span>
+                <h5 className="fw-bold mb-0">Create New User</h5>
               </div>
-              <div className="modal-body">
-                <input
-                  className="form-control mb-3"
-                  placeholder="Full Name"
-                />
-                <input
-                  className="form-control mb-3"
-                  placeholder="Email"
-                />
-                <select className="form-select mb-3">
-                  <option>Select Role</option>
-                  <option>Production</option>
-                  <option>QC</option>
-                </select>
-                <input
-                  className="form-control"
-                  placeholder="Temporary Password"
-                />
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancel
-                </button>
-                <button className="btn btn-primary">
-                  Create User
-                </button>
+              <button
+                className="btn-close"
+                onClick={() => setShowModal(false)}
+              ></button>
+            </div>
+
+            {/* Body */}
+            <div className="mb-4">
+              <input
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="form-control mb-3 rounded-pill border-1 shadow-sm"
+                placeholder="Full Name"
+              />
+              <input
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="form-control mb-3 rounded-pill border-1 shadow-sm"
+                placeholder="Email"
+              />
+              <input
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="form-control mb-3 rounded-pill border-1 shadow-sm"
+                placeholder="Temporary Password"
+                type="password"
+              />
+
+              {/* Roles */}
+              <div className="mb-3">
+                <label className="form-label fw-semibold mb-2">Select Roles</label>
+                <div className="d-flex gap-3">
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      value="production"
+                      name="roles"
+                      checked={formData.roles.includes("production")}
+                      onChange={handleChange}
+                      id="roleproduction"
+                    />
+                    <label className="form-check-label" htmlFor="roleproduction">
+                      <span className="badge bg-success">production</span>
+                    </label>
+                  </div>
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      value="qc"
+                      name="roles"
+                      checked={formData.roles.includes("qc")}
+                      onChange={handleChange}
+                      id="roleqc"
+                    />
+                    <label className="form-check-label" htmlFor="roleqc">
+                      <span className="badge bg-warning text-dark">qc</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Footer */}
+            <div className="d-flex justify-content-end gap-3">
+              <button
+                className="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold"
+                onClick={() => setShowModal(false)}
+                style={{ transition: "all 0.2s" }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary rounded-pill px-4 py-2 fw-semibold"
+                onClick={handleCreateUser}
+                style={{ background: "linear-gradient(90deg, #4e8ef7, #6ab4ff)", border: "none", transition: "all 0.2s" }}
+              >
+                <i className="bi bi-check-circle-fill me-1"></i> Create User
+              </button>
+            </div>
           </div>
-          <div className="modal-backdrop fade show"></div>
         </div>
       )}
+
+
+
 
     </div>
   );
 }
 
 /* ---------- Helpers ---------- */
-
 function StatCard({ title, value, color }) {
   return (
-    <div className="col-md-3">
+    <div className="col-md-3 mb-3">
       <div className={`card text-white bg-${color} shadow-sm`}>
         <div className="card-body">
           <p className="mb-1">{title}</p>

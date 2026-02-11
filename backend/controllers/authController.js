@@ -8,18 +8,19 @@ const generateToken = (user) => {
   return jwt.sign(
     {
       id: user._id,
-      role: user.role,
+      roles: user.roles,
     },
     process.env.JWT_SECRET,
   );
 };
 
 
-exports.registerUser = async (req, res) => {
+const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, roles } = req.body;
+    console.log(req.body)
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password || !roles) {
       return res.json({success:false, message: "All fields are required" });
     }
 
@@ -38,7 +39,7 @@ exports.registerUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role, // must be array
+      roles, // must be array
     });
 
     res.json({
@@ -48,7 +49,7 @@ exports.registerUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        roles: user.roles,
       },
     });
   } catch (error) {
@@ -57,12 +58,14 @@ exports.registerUser = async (req, res) => {
 };
 
 
-exports.loginUser = async (req, res) => {
+const loginUser = async (req, res) => {
   try {
+    console.log("HELLO WROLD");
     const { email, password } = req.body;
-
+    console.log(req.body)
     // Check user
     const user = await User.findOne({ email });
+    console.log(user)
     if (!user) {
       return res.json({success:false, message: "Invalid credentials" });
     }
@@ -84,10 +87,12 @@ exports.loginUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        roles: user.roles,
       },
     });
   } catch (error) {
     res.json({success:false, message: error.message });
   }
 };
+
+export { registerUser, loginUser };

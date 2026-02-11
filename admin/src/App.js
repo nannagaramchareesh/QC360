@@ -10,13 +10,16 @@ import Inventory from "./components/Inventory";
 import Users from "./components/Users";
 import Reports from "./components/Reports";
 import TaskDetails from "./components/TaskDetails";
-/* Context */
 import AdminContext from './context/AdminContext'
+export const backendUrl = process.env.REACT_APP_BACKEND_URL
+
+/* Context */
 
 export default function App() {
   const context = useContext(AdminContext)
   const isAuthenticated = context.isAuthenticated;
   console.log(context)
+  console.log(backendUrl)
 
   return (
     <Router>

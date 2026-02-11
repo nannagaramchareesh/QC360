@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import AuthContext from "./AuthContext";
 
 const AuthStates = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
 
   const login = (userData) => {
