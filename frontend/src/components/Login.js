@@ -24,11 +24,8 @@ const Login = () => {
       );
 
       if (data.success) {
-        // Save token
-        localStorage.setItem("token", data.token);
-
-        // Update context
-        login(data.user);
+        const token = data.token;
+        login(data.user, token);
 
         navigate("/");
       } else {

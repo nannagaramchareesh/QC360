@@ -9,8 +9,14 @@ import {
   FaFileAlt,
   FaSignOutAlt,
 } from "react-icons/fa";
+import { useContext } from "react";
+import AdminContext from "../context/AdminContext";
 
 export default function Sidebar() {
+  const {logout} = useContext(AdminContext);
+  const handleLogout = () => {
+    logout();
+  }
   return (
     <div
       className="d-flex flex-column p-3 text-white"
@@ -65,6 +71,7 @@ export default function Sidebar() {
 
         {/* Logout */}
         <button
+          onClick={handleLogout}
           className="btn btn-outline-light w-100 d-flex align-items-center justify-content-center gap-2"
         >
           <FaSignOutAlt />

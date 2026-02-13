@@ -13,9 +13,16 @@ export default function UserManagement() {
     roles: [],
   });
   const [users, setUsers] = useState([]);
-  useEffect(async ()=>{
-    const response = await axios.get(`${backendUrl}/api/users`);
-    setUsers(response.data);
+  const getUsers = async()=>{
+    const {data} = await axios.get(`${backendUrl}/api/admin/users`);
+    if(data.success){
+      setUsers(data.users);
+    }else{
+      alert("Error fetching users: " + data.message);
+    }
+  }
+  useEffect(() => {
+    getUsers();
   }, []);
   // Sample users
 
@@ -51,6 +58,7 @@ export default function UserManagement() {
     const {data} = await axios.post(`${backendUrl}/api/auth/register`, formData)
     if(data.success){
       alert("User created successfully!");
+      getUsers(); // Refresh user list
     }
     else {
       alert("Error creating user: " + data.message);

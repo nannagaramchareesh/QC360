@@ -78,7 +78,7 @@ const loginUser = async (req, res) => {
 
     // Generate token
     const token = generateToken(user);
-
+    console.log(token)
     res.json({
       success: true,
       message: "Login successful",

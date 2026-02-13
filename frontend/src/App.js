@@ -18,7 +18,6 @@ export default function App() {
   console.log(backendUrl)
 
   return (
-    <Router>
 
 
       <div className="min-h-screen bg-gray-100">
@@ -48,8 +47,6 @@ export default function App() {
 
       </div>
 
-      {/* {isAuthenticated && <Footer />} */}
 
-    </Router>
   )
 }

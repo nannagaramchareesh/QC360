@@ -22,7 +22,6 @@ export default function App() {
   console.log(backendUrl)
 
   return (
-    <Router>
       <div className="min-vh-100 bg-light">
 
         {isAuthenticated ? (
@@ -55,6 +54,5 @@ export default function App() {
         )}
 
       </div>
-    </Router>
   );
 }

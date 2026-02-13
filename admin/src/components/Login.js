@@ -1,6 +1,33 @@
 import React from "react";
-
+import axios from "axios";
+import { useState } from "react";
+import {backendUrl} from '../App'
+import { useContext } from "react";
+import AdminContext from "../context/AdminContext";
+import { useNavigate } from "react-router-dom";
 export default function AdminLogin() {
+  const [email, setEmail] = useState(null);
+  const [password, setPassword] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const {login} = useContext(AdminContext);
+  const navigate = useNavigate();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const {data} = await axios.post(`${backendUrl}/api/admin/login`,{email,password})
+      console.log(data)
+      if(data.success){
+        alert("login successful")
+        login(data.token);
+        navigate('/')
+      }
+      else{
+        alert("invalid credentials")
+      }
+    } catch (error) {
+      alert("login failed")
+    }
+  }
   return (
     <div className="admin-login-page d-flex align-items-center justify-content-center">
       <div className="card shadow-lg border-0 admin-login-card">
@@ -29,11 +56,13 @@ export default function AdminLogin() {
               Sign in to access the admin control panel
             </p>
 
-            <form>
+            <form onSubmit={handleSubmit}>
               <div className="mb-3">
                 <label className="form-label">Email</label>
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value) }}
                   className="form-control"
                   placeholder="admin@company.com"
                 />
@@ -43,6 +72,8 @@ export default function AdminLogin() {
                 <label className="form-label">Password</label>
                 <input
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="form-control"
                   placeholder="••••••••"
                 />
