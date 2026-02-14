@@ -31,22 +31,6 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-const login = (req,res)=>{
-  try{
-    const {email,password} = req.body;
-    console.log(process.env.ADMIN_EMAIL,process.env.ADMIN_PASSWORD)
-
-    if(email==process.env.ADMIN_EMAIL && password==process.env.ADMIN_PASSWORD){
-      const token = generateToken();
-      res.json({success:true, message:"Login Successful",token});
-    }
-    else res.json({success:false,message:"Inavalid credentials"});
-  }
-  catch(error){
-    res.json({success:false,message:error.message})
-  }
-}
 
 
-
-export {getAllUsers,login};
+export {getAllUsers};

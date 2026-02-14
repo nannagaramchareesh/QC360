@@ -19,7 +19,7 @@ const registerUser = async (req, res) => {
   try {
     const { name, email, password, roles } = req.body;
     console.log(req.body)
-
+    console.log("HITTING")
     if (!name || !email || !password || !roles) {
       return res.json({success:false, message: "All fields are required" });
     }

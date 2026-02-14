@@ -13,11 +13,15 @@ export default function UserManagement() {
     roles: [],
   });
   const [users, setUsers] = useState([]);
-  const getUsers = async()=>{
-    const {data} = await axios.get(`${backendUrl}/api/admin/users`);
-    if(data.success){
+  const getUsers = async () => {
+    const { data } = await axios.get(`${backendUrl}/api/admin/users`, {
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    if (data.success) {
       setUsers(data.users);
-    }else{
+    } else {
       alert("Error fetching users: " + data.message);
     }
   }
@@ -55,8 +59,17 @@ export default function UserManagement() {
       return;
     }
 
-    const {data} = await axios.post(`${backendUrl}/api/auth/register`, formData)
-    if(data.success){
+    const { data } = await axios.post(
+      `${backendUrl}/api/auth/register`,
+      formData,
+      {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (data.success) {
       alert("User created successfully!");
       getUsers(); // Refresh user list
     }
@@ -87,10 +100,10 @@ export default function UserManagement() {
 
       {/* Stats */}
       <div className="row mb-4">
-        <StatCard title="Total Users" value="12" color="primary" />
-        <StatCard title="production" value="7" color="success" />
-        <StatCard title="qc" value="4" color="warning" />
-        <StatCard title="Inactive" value="1" color="secondary" />
+        <StatCard title="Total Users" value={users.length} color="primary" />
+        <StatCard title="production" value={users.filter(u => u.roles.includes("production")).length} color="success" />
+        <StatCard title="qc" value={users.filter(u => u.roles.includes("qc")).length} color="warning" />
+        <StatCard title="Inactive" value={users.filter(u => u.status === "Inactive").length} color="secondary" />
       </div>
 
       {/* Filters */}

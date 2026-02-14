@@ -1,34 +1,38 @@
 import React, { useEffect, useState } from "react";
 import AdminContext from "./AdminContext";
-import { set } from "mongoose";
 import { useNavigate } from "react-router-dom";
 
 const AdminStates = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
-  const login = (token) => {
-    setIsAuthenticated(true);
-    localStorage.setItem("token", token);
-  }
+  const [token, setToken] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(()=>{
-    if(localStorage.getItem("token")){
-       setIsAuthenticated(true);
-       navigate('/')
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+
+    if (storedToken) {
+      setToken(storedToken);
+      setIsAuthenticated(true);
     }
-  },[])
+  }, []);
+
+
+  const login = (token) => {
+    localStorage.setItem("token", token);
+    setToken(token);
+    setIsAuthenticated(true);
+  };
+
+
   const logout = () => {
-    setIsAuthenticated(false);
     localStorage.removeItem("token");
-  }
+    setToken(null);
+    setIsAuthenticated(false);
+  };
+
+
   return (
-    <AdminContext.Provider
-      value={{
-        isAuthenticated,
-        login,
-        logout,
-      }}
-    >
+    <AdminContext.Provider value={{ isAuthenticated, login, logout }}>
       {children}
     </AdminContext.Provider>
   );

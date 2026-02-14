@@ -14,10 +14,10 @@ export default function AdminLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const {data} = await axios.post(`${backendUrl}/api/admin/login`,{email,password})
-      console.log(data)
+      const {data} = await axios.post(`${backendUrl}/api/auth/login`,{email,password})
       if(data.success){
         alert("login successful")
+        console.log(data.token)
         login(data.token);
         navigate('/')
       }
