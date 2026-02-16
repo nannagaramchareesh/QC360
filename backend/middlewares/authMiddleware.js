@@ -4,7 +4,7 @@ import User from "../models/User.js";
 export const protect = async (req, res, next) => {
   try {
     let token = req.headers.authorization;
-
+    console.log("Token: okay we are here", token); // Debugging log
     if (!token) {
       return res.status(401).json({ success: false, message: "No token provided" });
     }
@@ -16,7 +16,7 @@ export const protect = async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+    console.log("Decoded token:", decoded); // Debugging log
     // Attach user to request
     const user = await User.findById(decoded.id).select("-password");
     req.user = user;
@@ -31,10 +31,12 @@ export const protect = async (req, res, next) => {
 
 
 export const isAdmin = (req, res, next) => {
-  if (!req.user.role.includes("Admin")) {
+  console.log(req.user)
+  if (!req.user.roles.includes("admin")) {
     return res.status(403).json({
       message: "Admin access required",
     });
   }
+  console.log("User is admin, proceeding to next middleware/controller");
   next();
 };
