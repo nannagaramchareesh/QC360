@@ -1,66 +1,87 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import { backendUrl } from "../App.js";
 
 export default function TaskDetails() {
     const navigate = useNavigate();
+    const { id } = useParams();
+
+    const [task, setTask] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [showSendBack, setShowSendBack] = useState(false);
     const [qcRemark, setQcRemark] = useState("");
 
-    const task = {
-        id: "RMSI-1021",
-        project: "Hyderabad Water Board",
-        client: "Government of Telangana",
-        type: "New Servics", // Proposed Main | New Services
-        stage: "QC", // As-Built Review | Production | QC | Completed
-        status: "In Progress",
-        priority: "High",
-        dueDate: "2026-02-05",
-        description:
-            "Digitization and validation of pipeline data for Hyderabad Water Board region.",
-        assignedTo: "You",
-    };
+    /* =========================
+       Fetch Task From Backend
+    ========================== */
+    useEffect(() => {
+        const fetchTask = async () => {
+            try {
+                const token = localStorage.getItem("token");
 
+                const res = await axios.get(
+                    `${backendUrl}/api/tasks/${id}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
 
-    /* ---------- Stage-Based Helper ---------- */
+                setTask(res.data);
+            } catch (error) {
+                console.error("Error fetching task:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const getWorkflowHistory = () => {
-        if (task.type === "New Services") {
-            if (task.stage === "As-Built Review")
-                return ["As-Built Review"];
+        fetchTask();
+    }, [id]);
 
-            if (task.stage === "Production")
-                return ["As-Built Review", "Production"];
-
-            if (task.stage === "QC")
-                return ["As-Built Review", "Production"];
-
-            if (task.stage === "Completed")
-                return ["As-Built Review", "Production", "QC"];
-        }
-
-        // Proposed Main / others
-        if (task.stage === "Production")
-            return ["Production"];
-
-        if (task.stage === "QC")
-            return ["Production"];
-
-        if (task.stage === "Completed")
-            return ["Production", "QC"];
-
-        return [];
-    };
-
+    /* =========================
+       Stage Logic
+    ========================== */
 
     const getNextActionText = () => {
-        if (task.stage === "Production")
-            return "Complete work and submit to QC";
+        if (!task) return "";
 
-        if (task.stage === "QC")
-            return "Review work and approve or send back";
-
-        return "Task completed";
+        switch (task.stage?.toLowerCase()) {
+            case "production":
+                return "Complete work and submit to QC";
+            case "qc":
+                return "Review work and approve or send back";
+            default:
+                return "Task completed";
+        }
     };
+
+    /* =========================
+       Send Back (Frontend only for now)
+       (Connect to backend later)
+    ========================== */
+
+    const handleSendBack = () => {
+        setTask((prev) => ({
+            ...prev,
+            stage: "Production",
+            history: [
+                ...prev.history,
+                {
+                    _id: Date.now(),
+                    action: `Sent back to Production: ${qcRemark}`,
+                    timestamp: new Date().toISOString(),
+                },
+            ],
+        }));
+
+        setShowSendBack(false);
+        setQcRemark("");
+    };
+
+    if (loading) return <p className="p-6">Loading...</p>;
+    if (!task) return <p className="p-6">Task not found</p>;
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
@@ -70,7 +91,7 @@ export default function TaskDetails() {
                 <div>
                     <p className="text-sm text-gray-500">Task Details</p>
                     <h1 className="text-2xl font-semibold text-gray-800">
-                        {task.id}
+                        {task.workRequestId}
                     </h1>
                 </div>
 
@@ -84,24 +105,19 @@ export default function TaskDetails() {
 
             {/* Task Info */}
             <div className="grid grid-cols-3 gap-6 p-6 bg-white border rounded-lg">
-                <Info label="Project" value={task.project} />
-                <Info label="Client" value={task.client} />
+                <Info label="Work ID" value={task.workRequestId} />
+                <Info label="Batch No" value={task.batchNo} />
                 <Info label="Task Type" value={task.type} />
                 <Info label="Current Stage" value={task.stage} />
                 <Info label="Status" value={task.status} />
-                <Info label="Priority" value={task.priority} />
-                <Info label="Due Date" value={task.dueDate} />
-                <Info label="Assigned To" value={task.assignedTo} />
-            </div>
-
-            {/* Description */}
-            <div className="p-6 bg-white border rounded-lg">
-                <h2 className="mb-2 text-lg font-medium text-gray-800">
-                    Task Description
-                </h2>
-                <p className="text-sm text-gray-600">
-                    {task.description}
-                </p>
+                <Info
+                    label="Created At"
+                    value={new Date(task.createdAt).toLocaleDateString()}
+                />
+                <Info
+                    label="Assigned To"
+                    value={task.assignedTo?.name || "Unassigned"}
+                />
             </div>
 
             {/* Workflow History */}
@@ -111,18 +127,19 @@ export default function TaskDetails() {
                 </h2>
 
                 <div className="space-y-4">
-                    {getWorkflowHistory().map((stage, index) => (
+                    {task.history?.map((item) => (
                         <div
-                            key={index}
+                            key={item._id}
                             className="pl-4 border-l-2 border-blue-500"
                         >
-                            <p className="font-medium text-gray-700">{stage}</p>
+                            <p className="font-medium text-gray-700">
+                                {item.action}
+                            </p>
                             <p className="text-sm text-gray-500">
-                                {stage === task.stage ? "Current Stage" : "Completed"}
+                                {new Date(item.timestamp).toLocaleString()}
                             </p>
                         </div>
                     ))}
-
                 </div>
             </div>
 
@@ -136,14 +153,12 @@ export default function TaskDetails() {
                 </div>
 
                 <div className="flex gap-3">
-                    {/* Production */}
                     {task.stage === "Production" && (
                         <button className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700">
                             Submit to QC
                         </button>
                     )}
 
-                    {/* QC */}
                     {task.stage === "QC" && (
                         <>
                             <button
@@ -153,17 +168,15 @@ export default function TaskDetails() {
                                 Send Back
                             </button>
 
-                            <button
-                                className="px-4 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                            >
+                            <button className="px-4 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700">
                                 Approve
                             </button>
                         </>
                     )}
-
                 </div>
             </div>
 
+            {/* Send Back Modal */}
             {showSendBack && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
                     <div className="w-full max-w-md p-6 space-y-4 bg-white rounded-lg">
@@ -192,14 +205,9 @@ export default function TaskDetails() {
                             </button>
 
                             <button
-                                disabled={qcRemark.trim().length < 15}
+                                disabled={qcRemark.trim().length < 10}
+                                onClick={handleSendBack}
                                 className="px-4 py-2 text-sm text-white bg-red-600 rounded-md disabled:opacity-50"
-                                onClick={() => {
-                                    // stage transition
-                                    task.stage = "Production";
-                                    setShowSendBack(false);
-                                    setQcRemark("");
-                                }}
                             >
                                 Send Back
                             </button>
@@ -207,22 +215,21 @@ export default function TaskDetails() {
                     </div>
                 </div>
             )}
-
-
         </div>
-
     );
 }
 
-/* ---------- Helper ---------- */
-
-
+/* =========================
+   Helper Component
+========================= */
 
 function Info({ label, value }) {
     return (
         <div>
             <p className="text-xs text-gray-500">{label}</p>
-            <p className="text-sm font-medium text-gray-800">{value}</p>
+            <p className="text-sm font-medium text-gray-800">
+                {value || "—"}
+            </p>
         </div>
     );
 }

@@ -88,6 +88,63 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+const assignTask = async (req, res) => {
+  try {
+    const { taskId, userId } = req.body;
+
+    if (!taskId || !userId) {
+      return res.json({
+        success: false,
+        message: "Task ID and User ID are required",
+      });
+    }
+
+    // Find task
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return res.json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Check if already assigned
+    if (task.assignedTo) {
+      return res.json({
+        success: false,
+        message: "Task already assigned",
+      });
+    }
+
+    // Assign user
+    task.assignedTo = userId;
+
+    // When assigned → always start with Production
+    task.stage = "Production";
+
+    // Add history
+    task.history.push({
+      action: `Task assigned to user`,
+      user: "Admin",
+    });
+
+    await task.save();
+
+    res.json({
+      success: true,
+      message: "Task assigned successfully",
+      task,
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 
-export {getAllUsers, createTask, getAllTasks};
+
+
+export {getAllUsers, createTask, getAllTasks, assignTask};

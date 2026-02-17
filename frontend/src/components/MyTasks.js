@@ -1,37 +1,47 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-const dummyTasks = [
-    {
-        id: "RMSI-1021",
-        batch: "BATCH-01",
-        type: "Proposed Main",
-        stage: "Production",
-        status: "Pending",
-        dueDate: "2026-02-05",
-    },
-    {
-        id: "RMSI-1025",
-        batch: "BATCH-02",
-        type: "New Service",
-        stage: "QC",
-        status: "In Progress",
-        dueDate: "2026-02-06",
-    },
-    {
-        id: "RMSI-1030",
-        batch: "BATCH-03",
-        type: "Replacement Service",
-        stage: "Delivery",
-        status: "Completed",
-        dueDate: "2026-02-03",
-    },
-];
+import axios from "axios";
 
 export default function MyTasks() {
+
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    console.log(tasks)
+    // 🔹 Fetch My Tasks
+    const fetchTasks = async () => {
+        try {
+            const token = localStorage.getItem("token");
+
+            const res = await axios.get("http://localhost:5000/api/tasks/my-tasks", {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            console.log("Fetched tasks:", res.data.tasks);
+            setTasks(res.data.tasks || []);
+        } catch (error) {
+            console.error("Error fetching tasks", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
+    // 🔹 Summary Counts
+    const pendingCount = tasks.filter(t => t.status === "pending").length;
+    const progressCount = tasks.filter(t => t.status === "in_progress").length;
+    const returnedCount = tasks.filter(t => t.status === "sent_back").length;
+
+    const today = new Date().toISOString().split("T")[0];
+    const dueToday = tasks.filter(t => t.dueDate === today).length;
+
     return (
         <div className="min-h-screen p-6 space-y-8 bg-gray-50">
 
-            {/* Page Header */}
+            {/* Header */}
             <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">My Tasks</h1>
@@ -43,76 +53,103 @@ export default function MyTasks() {
                 </span>
             </div>
 
-            {/* Summary Cards */}
+            {/* Summary */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
-                <SummaryCard title="Pending" value="4" color="yellow" />
-                <SummaryCard title="In Progress" value="2" color="blue" />
-                <SummaryCard title="Returned" value="1" color="red" />
-                <SummaryCard title="Due Today" value="1" color="green" />
+                <SummaryCard title="Pending" value={pendingCount} color="yellow" />
+                <SummaryCard title="In Progress" value={progressCount} color="blue" />
+                <SummaryCard title="Returned" value={returnedCount} color="red" />
+                <SummaryCard title="Due Today" value={dueToday} color="green" />
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                <select className="px-4 py-2 transition border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-                    <option>Status: All</option>
-                    <option>Pending</option>
-                    <option>In Progress</option>
-                    <option>Returned</option>
-                </select>
+            {/* Table */}
+           
+<div className="overflow-x-auto border border-gray-200 shadow-lg rounded-2xl bg-white">
+    <table className="w-full text-sm border-collapse">
 
-                <input
-                    type="text"
-                    placeholder="Search by Task ID or Batch"
-                    className="w-full px-4 py-2 transition border rounded-md shadow-sm sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                />
-            </div>
+        {/* HEADER */}
+        <thead className="text-xs tracking-wider text-gray-600 uppercase bg-gray-100">
+            <tr>
+                <th className="px-6 py-4 text-left">Work ID</th>
+                <th className="px-6 py-4 text-left">Batch</th>
+                <th className="px-6 py-4 text-left">Type</th>
+                <th className="px-6 py-4 text-left">Stage</th>
+                <th className="px-6 py-4 text-left">Status</th>
+                <th className="px-6 py-4 text-left">Created</th>
+                <th className="px-6 py-4 text-left">Action</th>
+            </tr>
+        </thead>
 
-            {/* Tasks Table */}
-            <div className="overflow-x-auto border border-gray-200 shadow-lg rounded-xl bg-gradient-to-b from-white to-gray-50">
-                <table className="w-full text-sm border-collapse">
-                    <thead className="text-xs tracking-wider text-gray-700 uppercase bg-gray-100">
-                        <tr>
-                            <th className="px-6 py-3 text-left">Task ID</th>
-                            <th className="px-6 py-3 text-left">Batch Number</th>
-                            <th className="px-6 py-3 text-left">Task Type</th>
-                            <th className="px-6 py-3 text-left">Stage</th>
-                            <th className="px-6 py-3 text-left">Status</th>
-                            <th className="px-6 py-3 text-left">Due Date</th>
-                            <th className="px-6 py-3 text-left">Action</th>
-                        </tr>
-                    </thead>
+        {/* BODY */}
+        <tbody className="divide-y">
+            {loading ? (
+                <tr>
+                    <td colSpan="7" className="px-6 py-8 text-center text-gray-400">
+                        Loading tasks...
+                    </td>
+                </tr>
+            ) : tasks.length === 0 ? (
+                <tr>
+                    <td colSpan="7" className="px-6 py-8 text-center text-gray-400">
+                        No tasks assigned
+                    </td>
+                </tr>
+            ) : (
+                tasks.map((task, index) => (
+                    <tr
+                        key={task.workRequestId}
+                        className={`transition hover:bg-blue-50 ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+                    >
+                        {/* Work ID */}
+                        <td className="px-6 py-4 font-semibold text-gray-800">
+                            {task.workRequestId}
+                        </td>
 
-                    <tbody className="divide-y">
-                        {dummyTasks.map((task, index) => (
-                            <tr
-                                key={task.id}
-                                className={`transition hover:shadow-lg hover:bg-blue-50 rounded-lg ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+                        {/* Batch */}
+                        <td className="px-6 py-4 text-gray-700">
+                            {task.batchNo}
+                        </td>
+
+                        {/* Type */}
+                        <td className="px-6 py-4 text-gray-700">
+                            {task.type}
+                        </td>
+
+                        {/* Stage */}
+                        <td className="px-6 py-4">
+                            <StageBadge stage={task.stage} />
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-6 py-4">
+                            <StatusBadge status={task.status} />
+                        </td>
+
+                        {/* Created Date */}
+                        <td className="px-6 py-4 text-gray-600">
+                            {new Date(task.createdAt).toLocaleDateString()}
+                        </td>
+
+                        {/* Action */}
+                        <td className="px-6 py-4">
+                            <Link
+                                to={`/tasks/${task._id}`}
+                                className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                             >
-                                <td className="px-6 py-4 font-medium text-gray-800">{task.id}</td>
-                                <td className="px-6 py-4 font-medium text-gray-700">{task.batch}</td>
-                                <td className="px-6 py-4 text-gray-700">{task.type}</td>
-                                <td className="px-6 py-4 text-gray-700">{task.stage}</td>
-                                <td className="px-6 py-4">
-                                    <StatusBadge status={task.status} />
-                                </td>
-                                <td className="px-6 py-4 text-gray-700">{task.dueDate}</td>
-                                <td className="px-6 py-4">
-                                    <Link to={`/tasks/${task.id}`} className="text-blue-600 hover:underline">
-                                        View
-                                    </Link>
-
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                                View
+                            </Link>
+                        </td>
+                    </tr>
+                ))
+            )}
+        </tbody>
+    </table>
+</div>
 
         </div>
     );
 }
 
-/* ---------- Helper Components ---------- */
+/* ---------- Components ---------- */
 
 function SummaryCard({ title, value, color }) {
     const colors = {
@@ -123,7 +160,7 @@ function SummaryCard({ title, value, color }) {
     };
 
     return (
-        <div className={`p-5 rounded-xl shadow-lg border ${colors[color]} hover:scale-105 transition-transform`}>
+        <div className={`p-5 rounded-xl shadow-lg border ${colors[color]}`}>
             <p className="text-sm font-medium">{title}</p>
             <p className="mt-2 text-2xl font-bold">{value}</p>
         </div>
@@ -131,18 +168,45 @@ function SummaryCard({ title, value, color }) {
 }
 
 function StatusBadge({ status }) {
+
+    const map = {
+        Pending: "Pending",
+        in_progress: "In Progress",
+        sent_back: "Returned",
+        completed: "Completed"
+    };
+
     const styles = {
         Pending: "bg-yellow-100 text-yellow-800",
-        "In Progress": "bg-blue-100 text-blue-800",
-        Returned: "bg-red-100 text-red-800",
-        Completed: "bg-green-100 text-green-800",
+        in_progress: "bg-blue-100 text-blue-800",
+        sent_back: "bg-red-100 text-red-800",
+        completed: "bg-green-100 text-green-800",
     };
 
     return (
-        <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status]} shadow-sm`}
-        >
-            {status}
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status]}`}>
+            {map[status]}
         </span>
     );
 }
+
+function StageBadge({ stage }) {
+    const styles = {
+        Production: "bg-purple-100 text-purple-800",
+        qc: "bg-indigo-100 text-indigo-800",
+        delivery: "bg-green-100 text-green-800",
+    };
+
+    const map = {
+        Production: "Production",
+        qc: "QC",
+        delivery: "Delivery",
+    };
+
+    return (
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[stage]}`}>
+            {map[stage]}
+        </span>
+    );
+}
+

@@ -4,7 +4,7 @@ import 'dotenv/config';
 import connect from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
-
+import taskRoutes from './routes/taskRoutes.js';
 const app = express();
 const port = process.env.PORT;
 
@@ -15,6 +15,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/tasks", taskRoutes);
 
 
 app.listen(port, () => {

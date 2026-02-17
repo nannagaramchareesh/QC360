@@ -1,8 +1,9 @@
 import { NavLink, useLocation } from "react-router-dom";
-
+import { useContext } from "react";
+import AuthContext from "../context/AuthContext";
 const Sidebar = () => {
   const location = useLocation();
-
+  const { user, logout } = useContext(AuthContext);
   const links = [
     { name: "Dashboard", to: "/" },
     { name: "My Tasks", to: "/tasks" },
@@ -49,8 +50,8 @@ const Sidebar = () => {
 
       {/* Logout Section (moved just below nav links) */}
       <div className="mt-6">
-        <p className="text-xs text-gray-400 mb-2">Logged in as <span className="font-medium text-gray-700">Admin</span></p>
-        <button className="w-full px-4 py-2 font-semibold text-red-600 transition-all duration-300 rounded-lg bg-red-50 hover:bg-red-100 hover:scale-105">
+        <p className="text-xs text-gray-400 mb-2">Logged in as <span className="font-medium text-gray-700">{user?.name || "Admin"}</span></p>
+        <button onClick={logout} className="w-full px-4 py-2 font-semibold text-red-600 transition-all duration-300 rounded-lg bg-red-50 hover:bg-red-100 hover:scale-105">
           Logout
         </button>
       </div>
