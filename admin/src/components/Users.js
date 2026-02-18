@@ -1,53 +1,96 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { backendUrl } from "../App";
-
+import { toast } from "react-toastify";
 export default function UserManagement() {
   const [showModal, setShowModal] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [taskCounts, setTaskCounts] = useState({});
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("All Roles");
 
-  // Form state
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     roles: [],
   });
-  const [users, setUsers] = useState([]);
+
+  /* ================= FETCH USERS ================= */
   const getUsers = async () => {
-    const { data } = await axios.get(`${backendUrl}/api/admin/users`, {
-      headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-    if (data.success) {
-      setUsers(data.users);
-    } else {
-      alert("Error fetching users: " + data.message);
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/admin/users`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (data.success) {
+        setUsers(data.users);
+        fetchTaskCounts(data.users);
+      }
+    } catch (err) {
+      console.error(err);
     }
-  }
+  };
+
+  /* ================= FETCH TASK COUNT ================= */
+  const fetchTaskCounts = async (usersList) => {
+    const counts = {};
+
+    for (let user of usersList) {
+      try {
+        const { data } = await axios.post(
+          `${backendUrl}/api/admin/user-task-count`, { userId: user._id },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        counts[user._id] = data.tasks?.length || 0;
+      } catch {
+        counts[user._id] = 0;
+      }
+    }
+
+    setTaskCounts(counts);
+  };
+
   useEffect(() => {
     getUsers();
   }, []);
-  // Sample users
 
-  // Handle input change
+  /* ================= FILTER LOGIC ================= */
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch =
+        user.name.toLowerCase().includes(search.toLowerCase()) ||
+        user.email.toLowerCase().includes(search.toLowerCase());
+
+      const matchesRole =
+        roleFilter === "All Roles" ||
+        user.roles.includes(roleFilter);
+
+      return matchesSearch && matchesRole;
+    });
+  }, [users, search, roleFilter]);
+
+  /* ================= HANDLE FORM ================= */
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, checked } = e.target;
 
     if (name === "roles") {
       let updatedRoles = [...formData.roles];
-      if (checked) {
-        updatedRoles.push(value);
-      } else {
-        updatedRoles = updatedRoles.filter((r) => r !== value);
-      }
+      if (checked) updatedRoles.push(value);
+      else updatedRoles = updatedRoles.filter((r) => r !== value);
       setFormData({ ...formData, roles: updatedRoles });
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
 
-  // Handle form submission
   const handleCreateUser = async () => {
     if (
       !formData.name ||
@@ -55,272 +98,286 @@ export default function UserManagement() {
       !formData.password ||
       formData.roles.length === 0
     ) {
-      alert("Please fill all fields and select at least one role.");
+      toast.warning("Fill all fields.");
       return;
     }
 
-    const { data } = await axios.post(
-      `${backendUrl}/api/auth/register`,
-      formData,
-      {
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/auth/register`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
-    if (data.success) {
-      alert("User created successfully!");
-      getUsers(); // Refresh user list
+      if (data.success) {
+        getUsers();
+        toast.success("User created successfully");
+      }
+      else {
+        toast.warning(data.message);
+      }
+    } catch (err) {
+      toast.error("User creation failed");
     }
-    else {
-      alert("Error creating user: " + data.message);
-    }
-    // Reset form and close modal
+
     setFormData({ name: "", email: "", password: "", roles: [] });
     setShowModal(false);
   };
 
+  /* ================= CALCULATED STATS ================= */
+  const totalUsers = users.length;
+  const productionCount = users.filter((u) =>
+    u.roles.includes("production")
+  ).length;
+  const qcCount = users.filter((u) =>
+    u.roles.includes("qc")
+  ).length;
+  const totalTasks = Object.values(taskCounts).reduce(
+    (a, b) => a + b,
+    0
+  );
+
   return (
     <div className="container-fluid p-4">
 
-      {/* Header */}
+      {/* ================= HEADER ================= */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h3 className="fw-bold">User Management</h3>
-          <p className="text-muted mb-0">Manage production & qc team members</p>
+          <p className="text-muted mb-0">
+            Manage production & QC team members
+          </p>
         </div>
         <button
-          className="btn btn-primary"
+          className="btn btn-primary shadow rounded-pill px-4"
           onClick={() => setShowModal(true)}
         >
           + Create User
         </button>
       </div>
 
-      {/* Stats */}
+      {/* ================= STATS ================= */}
       <div className="row mb-4">
-        <StatCard title="Total Users" value={users.length} color="primary" />
-        <StatCard title="production" value={users.filter(u => u.roles.includes("production")).length} color="success" />
-        <StatCard title="qc" value={users.filter(u => u.roles.includes("qc")).length} color="warning" />
-        <StatCard title="Inactive" value={users.filter(u => u.status === "Inactive").length} color="secondary" />
+        <StatCard title="Total Users" value={totalUsers} gradient="linear-gradient(135deg,#667eea,#764ba2)" />
+        <StatCard title="Production" value={productionCount} gradient="linear-gradient(135deg,#11998e,#38ef7d)" />
+        <StatCard title="QC Team" value={qcCount} gradient="linear-gradient(135deg,#f7971e,#ffd200)" />
+        <StatCard title="Total Tasks Assigned" value={totalTasks} gradient="linear-gradient(135deg,#ff416c,#ff4b2b)" />
       </div>
 
-      {/* Filters */}
-      <div className="card shadow-sm mb-4">
+      {/* ================= FILTERS ================= */}
+      <div className="card shadow-sm border-0 rounded-4 mb-4">
         <div className="card-body row g-3">
-          <div className="col-md-4">
+          <div className="col-md-6">
             <input
               type="text"
-              className="form-control"
+              className="form-control rounded-pill shadow-sm"
               placeholder="Search by name or email"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="col-md-3">
-            <select className="form-select">
+
+          <div className="col-md-4">
+            <select
+              className="form-select rounded-pill shadow-sm"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
               <option>All Roles</option>
               <option>production</option>
               <option>qc</option>
             </select>
           </div>
-          <div className="col-md-3">
-            <select className="form-select">
-              <option>All Status</option>
-              <option>Active</option>
-              <option>Inactive</option>
-            </select>
-          </div>
+
           <div className="col-md-2">
-            <button className="btn btn-outline-secondary w-100">Reset</button>
+            <button
+              className="btn btn-outline-secondary w-100 rounded-pill"
+              onClick={() => {
+                setSearch("");
+                setRoleFilter("All Roles");
+              }}
+            >
+              Reset
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className="card shadow-sm">
+      {/* ================= TABLE ================= */}
+      <div className="card border-0 shadow-sm rounded-4">
         <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0">
-            <thead className="table-light">
+          <table className="table align-middle mb-0 table-hover">
+            <thead style={{ background: "#f8f9fa" }}>
               <tr>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Roles</th>
                 <th>Assigned Tasks</th>
-                <th>Status</th>
-                <th>Created On</th>
+                <th>Created At</th>
+
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user, index) => (
-                <tr key={index}>
-                  <td className="fw-medium">{user.name}</td>
-                  <td>{user.email}</td>
+              {filteredUsers.map((user) => (
+                <tr key={user._id} className="user-row">
+                  <td className="fw-semibold">{user.name}</td>
+                  <td className="text-muted">{user.email}</td>
+
                   <td>
                     {user.roles.map((role) => (
                       <span
                         key={role}
-                        className="badge bg-info text-dark me-1"
+                        className={`badge me-1 ${role === "production"
+                          ? "bg-success"
+                          : "bg-warning text-dark"
+                          }`}
                       >
                         {role}
                       </span>
                     ))}
                   </td>
-                  <td>{user.tasks}</td>
+
                   <td>
-                    <span
-                      className={`badge ${user.status === "Active" ? "bg-success" : "bg-secondary"
-                        }`}
-                    >
-                      {user.status}
+                    <span className="badge bg-primary rounded-pill px-3">
+                      {taskCounts[user._id] || 0}
                     </span>
                   </td>
-                  <td>{user.created}</td>
-                  <td className="text-end">
-                    <div className="dropdown">
-                      <button
-                        className="btn btn-sm btn-outline-secondary dropdown-toggle"
-                        data-bs-toggle="dropdown"
-                      >
-                        Actions
-                      </button>
-                      <ul className="dropdown-menu dropdown-menu-end">
-                        <li className="dropdown-item">View</li>
-                        <li className="dropdown-item">Edit</li>
-                        <li className="dropdown-item">Reset Password</li>
-                        <li>
-                          <hr className="dropdown-divider" />
-                        </li>
-                        <li className="dropdown-item text-danger">Deactivate</li>
-                      </ul>
-                    </div>
-                  </td>
+
+                  <td className="text-muted">{new Date(user.createdAt).toLocaleDateString()}</td>
+
+
                 </tr>
               ))}
+
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="text-center py-4 text-muted">
+                    No users found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Create User Modal */}
+      {/* ================= MODAL ================= */}
+      {/* ================= MODAL ================= */}
       {showModal && (
         <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.3)", zIndex: 1050 }}
+          className="modal-backdrop-custom"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",   // ✅ vertical center
+            justifyContent: "center", // ✅ horizontal center
+            zIndex: 9999,
+          }}
         >
-          <div className="bg-light rounded-4 shadow-lg p-5 w-100" style={{ maxWidth: "600px", border: "2px solid #f0f0f0" }}>
+          <div
+            className="modal-box"
+            style={{
+              background: "#fff",
+              padding: "25px",
+              borderRadius: "12px",
+              width: "400px",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+            }}
+          >
+            <h5 className="fw-bold mb-4">Create New User</h5>
 
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <div className="d-flex align-items-center gap-2">
-                <span className="fs-3 text-primary">
-                  <i className="bi bi-person-plus-fill"></i> {/* Bootstrap icon */}
-                </span>
-                <h5 className="fw-bold mb-0">Create New User</h5>
-              </div>
-              <button
-                className="btn-close"
-                onClick={() => setShowModal(false)}
-              ></button>
-            </div>
+            <input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="form-control mb-3 rounded-pill"
+              placeholder="Full Name"
+            />
+            <input
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="form-control mb-3 rounded-pill"
+              placeholder="Email"
+            />
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className="form-control mb-3 rounded-pill"
+              placeholder="Temporary Password"
+            />
 
-            {/* Body */}
-            <div className="mb-4">
-              <input
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="form-control mb-3 rounded-pill border-1 shadow-sm"
-                placeholder="Full Name"
-              />
-              <input
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="form-control mb-3 rounded-pill border-1 shadow-sm"
-                placeholder="Email"
-              />
-              <input
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="form-control mb-3 rounded-pill border-1 shadow-sm"
-                placeholder="Temporary Password"
-                type="password"
-              />
-
-              {/* Roles */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold mb-2">Select Roles</label>
-                <div className="d-flex gap-3">
-                  <div className="form-check">
+            <div className="mb-3">
+              <label className="fw-semibold mb-2">Roles</label>
+              <div className="d-flex gap-3">
+                {["production", "qc"].map((role) => (
+                  <div key={role} className="form-check">
                     <input
-                      className="form-check-input"
                       type="checkbox"
-                      value="production"
                       name="roles"
-                      checked={formData.roles.includes("production")}
+                      value={role}
+                      checked={formData.roles.includes(role)}
                       onChange={handleChange}
-                      id="roleproduction"
+                      className="form-check-input"
                     />
-                    <label className="form-check-label" htmlFor="roleproduction">
-                      <span className="badge bg-success">production</span>
+                    <label className="form-check-label">
+                      {role}
                     </label>
                   </div>
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      value="qc"
-                      name="roles"
-                      checked={formData.roles.includes("qc")}
-                      onChange={handleChange}
-                      id="roleqc"
-                    />
-                    <label className="form-check-label" htmlFor="roleqc">
-                      <span className="badge bg-warning text-dark">qc</span>
-                    </label>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Footer */}
             <div className="d-flex justify-content-end gap-3">
               <button
-                className="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold"
+                className="btn btn-outline-secondary rounded-pill"
                 onClick={() => setShowModal(false)}
-                style={{ transition: "all 0.2s" }}
               >
                 Cancel
               </button>
               <button
-                className="btn btn-primary rounded-pill px-4 py-2 fw-semibold"
+                className="btn btn-primary rounded-pill"
                 onClick={handleCreateUser}
-                style={{ background: "linear-gradient(90deg, #4e8ef7, #6ab4ff)", border: "none", transition: "all 0.2s" }}
               >
-                <i className="bi bi-check-circle-fill me-1"></i> Create User
+                Create
               </button>
             </div>
           </div>
         </div>
       )}
 
-
-
-
     </div>
   );
 }
 
-/* ---------- Helpers ---------- */
-function StatCard({ title, value, color }) {
+/* ================= STAT CARD ================= */
+function StatCard({ title, value, gradient }) {
   return (
     <div className="col-md-3 mb-3">
-      <div className={`card text-white bg-${color} shadow-sm`}>
+      <div
+        className="card border-0 shadow rounded-4 stat-card"
+        style={{
+          background: gradient,
+          color: "white",
+        }}
+      >
         <div className="card-body">
-          <p className="mb-1">{title}</p>
-          <h4 className="fw-bold mb-0">{value}</h4>
+          <p className="mb-1 opacity-75 small text-uppercase">
+            {title}
+          </p>
+          <h2 className="fw-bold mb-0">{value}</h2>
         </div>
       </div>
     </div>

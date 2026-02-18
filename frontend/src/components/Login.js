@@ -3,6 +3,7 @@ import AuthContext from "../context/AuthContext";
 import axios from "axios";
 import { backendUrl } from "../App";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const { login } = useContext(AuthContext);
@@ -25,15 +26,15 @@ const Login = () => {
 
       if (data.success) {
         const token = data.token;
+        toast.success("Login successful");
         login(data.user, token);
-
         navigate("/");
       } else {
-        alert(data.message);
+        toast.warning(data.message);
       }
 
     } catch (error) {
-      alert("Login failed");
+      toast.error("Login failed");
     } finally {
       setLoading(false);
     }

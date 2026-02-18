@@ -1,5 +1,9 @@
 import React, { useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+
 import MyTasks from './components/MyTasks'
 import TaskDetails from './components/TaskDetails'
 import Login from './components/Login'
@@ -20,33 +24,43 @@ export default function App() {
   return (
 
 
-      <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100">
 
-        {isAuthenticated ? (
-          <div className="flex">
-            <Sidebar />
+      {isAuthenticated ? (
+        <div className="flex">
+          <Sidebar />
 
-            <div className="flex-1 p-6">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/tasks" element={<MyTasks />} />
-                <Route path="/tasks/:id" element={<TaskDetails />} />
-                <Route path='/profile' element = {<Profile/>}></Route>
-                <Route path='/reports' element={<Reports/>}/>
-                {/* <Route path="/reports" element={<Reports />} /> */}
-                {/* <Route path="/profile" element={<Profile />} /> */}
-              </Routes>
-            </div>
+          <div className="flex-1 p-6">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/tasks" element={<MyTasks />} />
+              <Route path="/tasks/:id" element={<TaskDetails />} />
+              <Route path='/profile' element={<Profile />}></Route>
+              <Route path='/reports' element={<Reports />} />
+              {/* <Route path="/reports" element={<Reports />} /> */}
+              {/* <Route path="/profile" element={<Profile />} /> */}
+            </Routes>
           </div>
-        ) : (
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="*" element={<Navigate to="/login" />} />
-          </Routes>
-        )}
+        </div>
+      ) : (
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      )}
+      <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              closeOnClick
+              pauseOnHover
+              draggable
+              theme="colored"
+            />
+      
 
-      </div>
+    </div>
 
 
-  )
+  );
 }

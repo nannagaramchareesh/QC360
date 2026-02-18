@@ -171,16 +171,14 @@ function StatusBadge({ status }) {
 
     const map = {
         Pending: "Pending",
-        in_progress: "In Progress",
-        sent_back: "Returned",
-        completed: "Completed"
+        "In Progress": "In Progress",
+        Completed: "Completed"
     };
 
     const styles = {
         Pending: "bg-yellow-100 text-yellow-800",
-        in_progress: "bg-blue-100 text-blue-800",
-        sent_back: "bg-red-100 text-red-800",
-        completed: "bg-green-100 text-green-800",
+        "In Progress": "bg-blue-100 text-blue-800",
+        Completed: "bg-green-100 text-green-800",
     };
 
     return (
@@ -193,14 +191,16 @@ function StatusBadge({ status }) {
 function StageBadge({ stage }) {
     const styles = {
         Production: "bg-purple-100 text-purple-800",
-        qc: "bg-indigo-100 text-indigo-800",
-        delivery: "bg-green-100 text-green-800",
+        QC: "bg-indigo-100 text-indigo-800",
+        Completed: "bg-green-100 text-green-800",
+        "As-Built Review": "bg-blue-100 text-blue-800",
     };
 
     const map = {
         Production: "Production",
-        qc: "QC",
-        delivery: "Delivery",
+        QC: "QC",
+        Completed: "Completed",
+        "As-Built Review": "As-Built Review",
     };
 
     return (

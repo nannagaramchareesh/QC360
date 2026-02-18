@@ -80,7 +80,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Alerts & Insights */}
       <div className="row g-4">
 
         <div className="col-lg-6">

@@ -34,7 +34,7 @@ const taskSchema = new mongoose.Schema(
     // workflow fields
     stage: {
       type: String,
-      enum: ["Unassigned", "Production", "QC", "Completed"],
+      enum: ["Unassigned", "Production", "QC", "Completed", "As-Built Review"],
       default: "Unassigned",
     },
 

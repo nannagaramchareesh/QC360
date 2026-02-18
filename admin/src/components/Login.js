@@ -5,6 +5,8 @@ import {backendUrl} from '../App'
 import { useContext } from "react";
 import AdminContext from "../context/AdminContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
 export default function AdminLogin() {
   const [email, setEmail] = useState(null);
   const [password, setPassword] = useState(null);
@@ -16,16 +18,16 @@ export default function AdminLogin() {
     try {
       const {data} = await axios.post(`${backendUrl}/api/auth/login`,{email,password})
       if(data.success){
-        alert("login successful")
+        toast.success("Login successful");
         console.log(data.token)
         login(data.token);
         navigate('/')
       }
       else{
-        alert("invalid credentials")
+        toast.warning("Invalid credentials");
       }
     } catch (error) {
-      alert("login failed")
+      toast.error("Login failed");
     }
   }
   return (

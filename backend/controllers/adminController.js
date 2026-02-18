@@ -7,7 +7,9 @@ import Task from "../models/Task.js";
 
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
+    const users = await User.find({
+      roles: { $nin: ["admin"] }   // 👈 exclude admin users
+    }).select("-password");
 
     res.json({
       success: true,
@@ -15,7 +17,7 @@ const getAllUsers = async (req, res) => {
       users,
     });
   } catch (error) {
-    res.json({
+    res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -23,7 +25,8 @@ const getAllUsers = async (req, res) => {
 };
 
 
- const createTask = async (req, res) => {
+
+const createTask = async (req, res) => {
   try {
     const { workRequestId, batchNo, type } = req.body;
 
@@ -69,7 +72,7 @@ const getAllUsers = async (req, res) => {
   }
 };
 
- const getAllTasks = async (req, res) => {
+const getAllTasks = async (req, res) => {
   try {
     const tasks = await Task.find()
       .populate("assignedTo", "name email role")
@@ -92,41 +95,26 @@ const assignTask = async (req, res) => {
   try {
     const { taskId, userId } = req.body;
 
-    if (!taskId || !userId) {
-      return res.json({
-        success: false,
-        message: "Task ID and User ID are required",
-      });
-    }
-
-    // Find task
     const task = await Task.findById(taskId);
-
     if (!task) {
-      return res.json({
-        success: false,
-        message: "Task not found",
-      });
+      return res.json({ success: false, message: "Task not found" });
     }
 
-    // Check if already assigned
-    if (task.assignedTo) {
-      return res.json({
-        success: false,
-        message: "Task already assigned",
-      });
-    }
-
-    // Assign user
+    // assign user
     task.assignedTo = userId;
+    task.status = "In Progress";
 
-    // When assigned → always start with Production
-    task.stage = "Production";
+    // 🔥 SET INITIAL STAGE BASED ON TYPE
+    if (task.type === "New Services") {
+      task.stage = "As-Built Review";
+    } else {
+      task.stage = "Production";
+    }
 
-    // Add history
+    // ✅ PUSH TO HISTORY
     task.history.push({
-      action: `Task assigned to user`,
-      user: "Admin",
+      action: "Task Assigned",
+      performedBy: req.user._id,   // logged-in admin
     });
 
     await task.save();
@@ -136,10 +124,72 @@ const assignTask = async (req, res) => {
       message: "Task assigned successfully",
       task,
     });
+
   } catch (error) {
-    res.json({
+    console.error(error);
+    res.json({ success: false, message: "Error assigning task" });
+  }
+};
+
+
+
+const userTaskCount = async (req, res) => {
+  try {
+    const { userId } = req.body
+
+    const tasks = await Task.find({ assignedTo: userId })
+      .populate("assignedTo", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: tasks.length,
+      tasks
+    });
+
+  } catch (error) {
+    res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to fetch tasks",
+      error: error.message
+    });
+  }
+};
+
+const deleteAllTasks = async (req, res) => {
+  try {
+    const result = await Task.deleteMany({});
+
+    return res.status(200).json({
+      success: true,
+      message: "All tasks deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Delete All Tasks Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting tasks",
+    });
+  }
+};
+
+const deleteAllUsers = async (req, res) => {
+  try {
+    const result = await User.deleteMany({
+      roles: { $nin: ["admin"] }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "All users deleted successfully (except admin)",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Delete All Users Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting users",
     });
   }
 };
@@ -147,4 +197,5 @@ const assignTask = async (req, res) => {
 
 
 
-export {getAllUsers, createTask, getAllTasks, assignTask};
+
+export { getAllUsers, createTask, getAllTasks, assignTask, userTaskCount, deleteAllTasks, deleteAllUsers };

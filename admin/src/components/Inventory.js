@@ -4,6 +4,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Table, Button, Badge, Modal, Form, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { backendUrl } from "../App";
+import { toast } from "react-toastify";
+
+
 
 export default function Inventory() {
 
@@ -17,6 +20,13 @@ export default function Inventory() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
+
+  const [filterType, setFilterType] = useState("all");
+  const [filterStage, setFilterStage] = useState("all");
+  const [filterAssign, setFilterAssign] = useState("all");
+
+  const [searchTerm, setSearchTerm] = useState("");
+
 
   const [newTask, setNewTask] = useState({
     workRequestId: "",
@@ -45,11 +55,11 @@ export default function Inventory() {
       if (res.data.success) {
         setTasks(res.data.tasks);
       } else {
-        alert(res.data.message);
+        toast.warning(res.data.message);
       }
     } catch (error) {
       console.error(error);
-      alert("Error fetching tasks");
+      toast.error("Error fetching tasks");
     } finally {
       setLoading(false);
     }
@@ -63,7 +73,7 @@ export default function Inventory() {
     try {
       const res = await axios.get(`${backendUrl}/api/admin/users`, {
         headers: {
-          authorization: localStorage.getItem("token"),
+          authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -72,14 +82,14 @@ export default function Inventory() {
       }
     } catch (err) {
       console.log(err);
-      alert("Error fetching users");
+      toast.error("Error fetching users");
     }
   };
 
   // ---------------- CREATE TASK ----------------
   const handleCreateTask = async () => {
     if (!newTask.workRequestId || !newTask.batchNo || !newTask.type) {
-      alert("All fields are required");
+      toast.warning("All fields are required");
       return;
     }
 
@@ -89,29 +99,29 @@ export default function Inventory() {
         newTask,
         {
           headers: {
-            authorization: localStorage.getItem("token"),
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
 
       if (res.data.success) {
-        alert("Task Created ✅");
+        toast.success("Task Created Successfully ✅");
         setShowCreate(false);
         setNewTask({ workRequestId: "", batchNo: "", type: "New Services" });
         fetchTasks();
       } else {
-        alert(res.data.message);
+        toast.warning(res.data.message);
       }
     } catch (error) {
       console.error(error);
-      alert("Error creating task");
+      toast.error("Error creating task");
     }
   };
 
   // ---------------- ASSIGN TASK ----------------
   const handleAssignTask = async () => {
     if (!selectedUser) {
-      alert("Please select a user");
+      toast.warning("Please select a user");
       return;
     }
 
@@ -124,28 +134,61 @@ export default function Inventory() {
         },
         {
           headers: {
-            authorization: localStorage.getItem("token"),
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
 
       if (res.data.success) {
-        alert("Task Assigned Successfully ✅");
+        toast.success("Task Assigned Successfully ✅");
         setShowAssign(false);
         setSelectedUser("");
         fetchTasks();
       } else {
-        alert(res.data.message);
+        toast.warning(res.data.message);
       }
     } catch (error) {
       console.error(error);
-      alert("Error assigning task");
+      toast.error("Error assigning task");
     }
   };
 
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  const filteredTasks = tasks.filter((task) => {
+    // TYPE
+    if (filterType !== "all" && task.type !== filterType) return false;
+
+    // STAGE
+    if (filterStage !== "all" && task.stage !== filterStage) return false;
+
+    // ASSIGNMENT
+    if (filterAssign === "assigned" && !task.assignedTo) return false;
+    if (filterAssign === "unassigned" && task.assignedTo) return false;
+
+    // 🔍 SEARCH (Task ID OR Batch No)
+    if (
+      searchTerm &&
+      !task.workRequestId.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !task.batchNo.toLowerCase().includes(searchTerm.toLowerCase())
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const resetFilters = () => {
+    setFilterType("all");
+    setFilterStage("all");
+    setFilterAssign("all");
+    setSearchTerm("");
+  };
+
+
+
 
   return (
     <div className="container-fluid p-4">
@@ -203,6 +246,66 @@ export default function Inventory() {
         </div>
       </div>
 
+      {/* FILTERS */}
+      {/* FILTERS */}
+      <div className="card shadow-sm border-0 mb-3">
+        <div className="card-body d-flex gap-3 flex-wrap align-items-center">
+
+          {/* TYPE */}
+          <Form.Select
+            style={{ maxWidth: "180px" }}
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+          >
+            <option value="all">All Types</option>
+            <option>Proposed Mains</option>
+            <option>New Business Mains</option>
+            <option>Replacement Services</option>
+            <option>New Services</option>
+          </Form.Select>
+
+          {/* STAGE */}
+          <Form.Select
+            style={{ maxWidth: "180px" }}
+            value={filterStage}
+            onChange={(e) => setFilterStage(e.target.value)}
+          >
+            <option value="all">All Stages</option>
+            <option>Production</option>
+            <option>QC</option>
+            <option>Completed</option>
+          </Form.Select>
+
+          {/* ASSIGNMENT */}
+          <Form.Select
+            style={{ maxWidth: "180px" }}
+            value={filterAssign}
+            onChange={(e) => setFilterAssign(e.target.value)}
+          >
+            <option value="all">All Tasks</option>
+            <option value="assigned">Assigned</option>
+            <option value="unassigned">Unassigned</option>
+          </Form.Select>
+
+          {/* 🔍 SEARCH */}
+          <Form.Control
+            type="text"
+            placeholder="Search Task ID / Batch No"
+            style={{ maxWidth: "220px" }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          {/* 🔄 RESET BUTTON */}
+          <Button variant="outline-secondary" onClick={resetFilters}>
+            Reset
+          </Button>
+
+        </div>
+      </div>
+
+
+
       {/* TABLE */}
       <div className="card shadow-sm border-0">
         <div className="card-body">
@@ -224,7 +327,7 @@ export default function Inventory() {
               </thead>
 
               <tbody>
-                {tasks.map((task) => (
+                {filteredTasks.map((task) => (
                   <tr key={task._id}>
                     <td className="fw-semibold">{task.workRequestId}</td>
                     <td>{task.batchNo}</td>
@@ -236,8 +339,8 @@ export default function Inventory() {
                           task.stage === "QC"
                             ? "warning"
                             : task.stage === "Completed"
-                            ? "success"
-                            : "info"
+                              ? "success"
+                              : "info"
                         }
                       >
                         {task.stage}
@@ -248,7 +351,7 @@ export default function Inventory() {
 
                     <td className="d-flex gap-2">
                       <Link
-                        to={`${task.workRequestId}`}
+                        to={`${task._id}`}
                         className="btn btn-primary btn-sm"
                       >
                         View
@@ -281,7 +384,7 @@ export default function Inventory() {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Task ID</Form.Label>
+              <Form.Label>Work Request ID</Form.Label>
               <Form.Control
                 name="workRequestId"
                 value={newTask.workRequestId}

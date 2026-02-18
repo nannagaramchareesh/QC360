@@ -13,6 +13,7 @@ const AdminStates = ({ children }) => {
     if (storedToken) {
       setToken(storedToken);
       setIsAuthenticated(true);
+      navigate("/")
     }
   }, []);
 
